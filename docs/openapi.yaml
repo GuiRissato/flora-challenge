@@ -1,0 +1,481 @@
+openapi: 3.0.0
+info:
+  title: Word API
+  description: API for listing English words using the Free Dictionary API. Manages viewed and favorite words.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3333
+    description: Development Server
+
+paths:
+  /auth/signup:
+    post:
+      summary: Register a new user
+      operationId: signUpUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - name
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful registration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: f3a106sa65dv53ab2c1380acef
+                  email:
+                    type: string
+                    example: example@email.com
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjgwYzk2MTYyLTk1ODQtNDEyZC1iZDkxLWE1ZmU1MDkwMTExMCIsImlhdCI6MTcyMDk3NjkwMSwiZXhwIjoxNzIwOTgwNTAxfQ.VktFtJgVAINHXpzISCY7A_oPs51ltYCkzQZUk8pvEHI
+        '204':
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No user registered
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Internal server error
+
+  /auth/signin:
+    post:
+      summary: Authenticate and sign in a user
+      operationId: signInUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: f3a106sa65dv53ab2c1380acef
+                  name:
+                    type: string
+                    example: User 1
+                  token:
+                    type: string
+                    example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjgwYzk2MTYyLTk1ODQtNDEyZC1iZDkxLWE1ZmU1MDkwMTExMCIsImlhdCI6MTcyMDk4MzM3NywiZXhwIjoxNzIwOTg2OTc3fQ.RjBMAyzNj8GS4DspQjr5oQOnzKtG-IHdInxxLr8usqY
+        '204':
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No user found
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid email or password
+
+  /entries/en:
+    get:
+      summary: Retrieve a list of English dictionary entries
+      operationId: getDictionaryEntries
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search term to filter entries
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+          description: Number of entries per page
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - fire
+                      - firefly
+                      - fireplace
+                      - fireman
+                  totalDocs:
+                    type: integer
+                    example: 20
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 5
+                  hasNext:
+                    type: boolean
+                    example: true
+                  hasPrev:
+                    type: boolean
+                    example: false
+        '204':
+          description: No data available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No data
+        '400':
+          description: Failed to fetch words
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to fetch words
+
+  /entries/en/{word}:
+    get:
+      summary: Retrieve information about a specific word and save to history
+      operationId: getWordDetails
+      parameters:
+        - name: word
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Word to retrieve information for
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Word saved to history
+                  word:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 38d13df4-078a-45f2-b2ad-0333d361b441
+                      word:
+                        type: string
+                        example: cookable
+                      createdAt:
+                        type: string
+                        example: 2024-07-14T16:51:24.282Z
+                      updatedAt:
+                        type: string
+                        example: 2024-07-14T16:51:24.282Z
+                      
+        '204':
+          description: Word not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Word not found
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to save word
+
+  /entries/en/{word}/favorite:
+    post:
+      summary: Add a word to favorites
+      operationId: addWordToFavorites
+      parameters:
+        - name: word
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Word to add to favorites
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Favorite word saved"
+        '204':
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Word not found
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Failed to add favorite
+
+  /entries/en/{word}/unfavorite:
+    delete:
+      summary: Remove a word from favorites
+      operationId: removeWordFromFavorites
+      parameters:
+        - name: word
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Word to remove from favorites
+      responses:
+        '200':
+          description: Successful operation
+        '204':
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Word not found
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /user/me:
+    get:
+      summary: Retrieve user profile
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Successful response
+        '204':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Failed to retrieve user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to retrieve user profile
+                    
+  /user/me/history:
+    get:
+      summary: Retrieve user's history of visited words
+      operationId: getUserHistory
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        word:
+                          type: string
+                          example: fire
+                        added:
+                          type: string
+                          format: date-time
+                          example: "2024-07-14T17:23:50.060Z"
+                  totalDocs:
+                    type: integer
+                    example: 5
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+                  hasNext:
+                    type: boolean
+                    example: false
+                  hasPrev:
+                    type: boolean
+                    example: false
+        '204':
+          description: No data available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No data for History
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to retrieve user history
+
+  /user/me/favorites:
+    get:
+      summary: Retrieve user's favorite words
+      operationId: getUserFavorites
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        word:
+                          type: string
+                          example: fire
+                        added:
+                          type: string
+                          format: date-time
+                          example: "2024-07-14T17:23:50.060Z"
+                  totalDocs:
+                    type: integer
+                    example: 0
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 0
+                  hasNext:
+                    type: boolean
+                    example: false
+                  hasPrev:
+                    type: boolean
+                    example: false
+        '204':
+          description: No favorite words found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No data for Favorites
+        '400':
+          description: Error message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to retrieve user favorites
