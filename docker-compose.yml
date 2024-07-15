@@ -1,8 +1,11 @@
+# não está funcionando por alguma configuração que não estou sabendo ajustar
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile 
     ports:
-      - "3000:3000"
+      - "3333:3333"
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis:6379

@@ -44,11 +44,25 @@ exports.getHistory = async (req, res) => {
     const cachedResult = await redisClient.get(cacheKey);
 
     if (cachedResult) {
-      res.setHeader('x-cache', 'HIT');
-      res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
-      return res.status(200).json(JSON.parse(cachedResult));
-    }
+      const parsedCachedResult = JSON.parse(cachedResult);
+      const cachedCount = parsedCachedResult.totalDocs;
 
+      const {count, rows: history} = await History.findAndCountAll({
+        where: { userId },
+        attributes: ['createdAt'],
+        include: [{ model: Word, attributes: ['word'] }],
+        order: [['createdAt', 'DESC']],
+        offset: (parseInt(page) - 1) * parseInt(limit),
+        limit: parseInt(limit),
+      })
+
+      if(cachedCount === count){
+        res.setHeader('x-cache', 'HIT');
+        res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
+        return res.status(200).json(JSON.parse(cachedResult));
+      }
+    }
+    
     res.setHeader('x-cache', 'MISS');
     const { count, rows: history } = await History.findAndCountAll({
       where: { userId },
@@ -67,7 +81,7 @@ exports.getHistory = async (req, res) => {
       added: item.createdAt,
     }));
 
-    if (!formattedHistory.length) {
+    if (formattedHistory.length === 0) {
       res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
       return res.status(204).json({ message: 'No data for History' });
     }
@@ -100,12 +114,28 @@ exports.getFavorites = async (req, res) => {
     const cachedResult = await redisClient.get(cacheKey);
 
     if (cachedResult) {
-      res.setHeader('x-cache', 'HIT');
-      res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
-      return res.status(200).json(JSON.parse(cachedResult));
+      const parsedCachedResult = JSON.parse(cachedResult);
+      const cachedCount = parsedCachedResult.totalDocs;
+      
+      const { count, rows: favorites } = await Favorite.findAndCountAll({
+        where: { userId },
+        attributes: ['createdAt'],
+        include: [{ model: Word, attributes: ['word'] }],
+        order: [['createdAt', 'DESC']],
+        offset: (page - 1) * limit,
+        limit: parseInt(limit),
+      });
+
+      if (cachedCount === count) {
+        res.setHeader('x-cache', 'HIT');
+        res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
+        return res.status(200).json(parsedCachedResult);
+      } 
+    } else {
+      res.setHeader('x-cache', 'MISS');
     }
 
-    res.setHeader('x-cache', 'MISS');
+    // Fetch data from the database
     const { count, rows: favorites } = await Favorite.findAndCountAll({
       where: { userId },
       attributes: ['createdAt'],
@@ -123,11 +153,10 @@ exports.getFavorites = async (req, res) => {
       added: item.createdAt,
     }));
 
-    if (!formattedFavorites.length) {
+    if (formattedFavorites.length === 0) {
       res.setHeader('x-response-time', `${(performance.now() - start).toFixed(3)} ms`);
       return res.status(204).json({ message: 'No data for favorites' });
     }
-
     const result = {
       results: formattedFavorites,
       totalDocs: count,
@@ -146,3 +175,4 @@ exports.getFavorites = async (req, res) => {
     return res.status(400).json({ error: 'Failed to retrieve user favorites' });
   }
 };
+
